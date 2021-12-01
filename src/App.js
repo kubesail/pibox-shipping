@@ -125,11 +125,16 @@ function App() {
 
   useEffect(async () => {
     setRates([]);
-    if (activeOrder?.shipment || !activeOrder?.address_1) return;
+    if (!activeOrder || !activeOrder?.address_1) return;
 
+    if (activeOrder.shipment) {
+      shipment = await api.Shipment.retrieve(activeOrder.shipment);
+      setRates(shipment.rates);
+      return;
+    }
     // setCost(orders);
 
-    activeOrder.shipment = await new api.Shipment({
+    shipment = await new api.Shipment({
       to_address: {
         company: activeOrder.company,
         street1: activeOrder.address_1,
@@ -200,12 +205,11 @@ function App() {
         <section className="App-details">
           {activeOrder ? (
             <div>
+              {activeOrder.shipment && <h2>{activeOrder.shipment}</h2>}
               <table>
                 <tbody>
-                  {activeOrder.shipment ? (
-                    <h2 style={{ color: "green" }}>
-                      ✔ Shipped - {activeOrder.shipment}
-                    </h2>
+                  {activeOrder?.shipment?.postage_label ? (
+                    <h2 style={{ color: "green" }}>✔ Shipped</h2>
                   ) : !activeOrder.address_1 ? (
                     <h2 style={{ color: "red" }}>Incomplete Address</h2>
                   ) : rates.length === 0 ? (
