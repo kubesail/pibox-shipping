@@ -129,7 +129,7 @@ function App() {
 
     // setCost(orders);
 
-    shipment = await new api.Shipment({
+    activeOrder.shipment = await new api.Shipment({
       to_address: {
         company: activeOrder.company,
         street1: activeOrder.address_1,
@@ -154,7 +154,15 @@ function App() {
       },
       parcel: PARCEL_HACKER_BUNDLE,
     }).save();
+    // TODO save shipment ID to kubesail API
     setRates(shipment.rates);
+    setOrders(
+      orders.map((order) =>
+        order.backer_uid === active
+          ? { ...order, shipment: shipment.id }
+          : order
+      )
+    );
   }, [active]);
 
   const activeOrder = orders.find((order) => order.backer_uid === active);
@@ -233,13 +241,6 @@ function App() {
                                   "_blank"
                                 );
                                 setRates([]);
-                                setOrders(
-                                  orders.map((order) =>
-                                    order.backer_uid === active
-                                      ? { ...order, shipment: shipment.id }
-                                      : order
-                                  )
-                                );
                               }}
                             >
                               Buy Postage

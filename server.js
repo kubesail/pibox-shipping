@@ -12,7 +12,6 @@ const port = 4000;
 app.use(bodyParser.json());
 
 const easyPostProxy = async (req, res) => {
-  console.log(req.body, req.method, req.get("content-type"));
   const apiRes = await fetch(`https://api.easypost.com${req.path}`, {
     method: req.method,
     headers: {
