@@ -153,6 +153,7 @@ function App() {
         phone: "936-718-4259",
       },
       options: {
+        label_format: "PDF",
         print_custom_1: "KS-" + activeOrder.reference_number,
         print_custom_1_barcode: "KS-" + activeOrder.reference_number,
       },
