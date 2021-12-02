@@ -2,7 +2,7 @@ import express from "express";
 import fetch from "node-fetch";
 import bodyParser from "body-parser";
 import dotenv from "dotenv";
-import http from "http"; // or 'https' for https:// URLs
+import https from "https"; // or 'https' for https:// URLs
 import fs from "fs";
 
 import { exec } from "child_process";
@@ -29,7 +29,7 @@ const easyPostProxy = async (req, res) => {
 
 app.post("/pibox/print-label", (req, res) => {
   const file = fs.createWriteStream("raster-to-tspl-js/test-label.png");
-  const request = http.get(req.body.url, function (response) {
+  const request = https.get(req.body.url, function (response) {
     response.pipe(file);
   });
   request.on("end", () => {
