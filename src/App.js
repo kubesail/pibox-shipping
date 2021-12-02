@@ -238,6 +238,9 @@ function App() {
                                 // TODO log shipment ID to kubesail API
                                 fetch("/pibox/print-label", {
                                   method: "POST",
+                                  headers: {
+                                    "content-type": "application/json",
+                                  },
                                   body: JSON.stringify({
                                     url: boughtShipment.postage_label.label_url,
                                   }),
