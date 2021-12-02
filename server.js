@@ -28,17 +28,28 @@ const easyPostProxy = async (req, res) => {
 };
 
 app.post("/pibox/print-label", (req, res) => {
-  const file = fs.createWriteStream("raster-to-tspl-js/test-label.png");
+  const file = fs.createWriteStream("raster-to-tspl-js/test-label2.png");
   const request = https.get(req.body.url, function (response) {
     response.pipe(file);
   });
   request.on("end", () => {
+    console.log("Saved label");
     exec(
       "node convert.js",
       {
         cwd: "/root/pibox-shipping/raster-to-tspl-js",
       },
-      (error, stdout, stderr) => {}
+      (error, stdout, stderr) => {
+        if (error) {
+          console.log(`error: ${error.message}`);
+          return;
+        }
+        if (stderr) {
+          console.log(`stderr: ${stderr}`);
+          return;
+        }
+        console.log(`stdout: ${stdout}`);
+      }
     );
   });
   res.send("");
