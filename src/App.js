@@ -153,7 +153,6 @@ function App() {
         phone: "936-718-4259",
       },
       options: {
-        label_format: "ZPL",
         print_custom_1: "KS-" + activeOrder.reference_number,
         print_custom_1_barcode: "KS-" + activeOrder.reference_number,
       },
@@ -237,13 +236,16 @@ function App() {
                                   rate.id
                                 );
                                 // TODO log shipment ID to kubesail API
-                                console.log(
-                                  boughtShipment.postage_label.label_url
-                                );
-                                window.open(
-                                  boughtShipment.postage_label.label_url,
-                                  "_blank"
-                                );
+                                fetch("/pibox/print-label", {
+                                  method: "POST",
+                                  body: JSON.stringify({
+                                    url: boughtShipment.postage_label.label_url,
+                                  }),
+                                });
+                                // window.open(
+                                //   boughtShipment.postage_label.label_url,
+                                //   "_blank"
+                                // );
                                 setRates([]);
                               }}
                             >

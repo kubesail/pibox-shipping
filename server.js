@@ -2,6 +2,8 @@ import express from "express";
 import fetch from "node-fetch";
 import bodyParser from "body-parser";
 import dotenv from "dotenv";
+import http from "http"; // or 'https' for https:// URLs
+import fs from "fs";
 
 import { exec } from "child_process";
 
@@ -25,18 +27,15 @@ const easyPostProxy = async (req, res) => {
   res.send(await apiRes.json());
 };
 
-app.get("/pibox-print", (req, res) => {
-  exec("ls -la", (error, stdout, stderr) => {
-    if (error) {
-      console.log(`error: ${error.message}`);
-      return;
-    }
-    if (stderr) {
-      console.log(`stderr: ${stderr}`);
-      return;
-    }
-    console.log(`stdout: ${stdout}`);
+app.get("/pibox/print-label", (req, res) => {
+  const file = fs.createWriteStream("raster-to-tspl-js/test-label.png");
+  const request = http.get(req.body.url, function (response) {
+    response.pipe(file);
   });
+  request.on("end", () => {
+    exec("node raster-to-tspl-js/convert.js", (error, stdout, stderr) => {});
+  });
+  res.send("");
 });
 
 app.get("*", easyPostProxy);
