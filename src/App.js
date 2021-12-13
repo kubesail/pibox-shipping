@@ -135,7 +135,7 @@ function App() {
       {
         method: "POST",
         headers: { "content-type": "application/json", authorization },
-        body: JSON.stringify({ pibox_order_id: orderId }),
+        body: JSON.stringify({ piboxOrderId: orderId }),
       }
     );
   }
