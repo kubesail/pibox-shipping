@@ -133,7 +133,7 @@ function App() {
       )
     );
 
-    let nextActiveIndex = activeOrderIndex;
+    let nextActiveIndex = activeOrderIndex + 1;
     while (filteredOrders[nextActiveIndex]?.notes) {
       nextActiveIndex++;
     }
