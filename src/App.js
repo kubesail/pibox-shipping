@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 import Easypost from "@easypost/api";
+import serialize from "form-serialize";
 
 const api = new Easypost("N/A", {
   baseUrl: `${window.origin}/v2/`,
@@ -18,185 +19,234 @@ let shipment;
 function App() {
   const [active, setActive] = useState(null);
   const [rates, setRates] = useState([]);
-  const [orders, setOrders] = useState([
-    {
-      backer_number: 1,
-      backer_uid: 123456789,
-      backer_name: "Adam Doyle",
-      email: "adoyle88@gmail.com",
-      shipping_country: "US",
-      shipping_amount: "$0.00",
-      reward_title: "Early Bird - Hacker Bundle",
-      backing_minimum: "$50.00",
-      reward_id: 8473311,
-      bonus_support: "$0.00",
-      pledge_amount: "$50.00",
-      pledged_at: "2021/10/25, 13:17",
-      fulfillment_status: "Not provided",
-      pledged_status: "collected",
-      notes: "",
-      survey_response: "",
-      first_name: "Adam",
-      mi: "",
-      last_name: "Doyle",
-      company: "DF KitCar",
-      address_1: "1225 Narrow Lane",
-      address_2: "",
-      address_3: "",
-      city: "Red Oak",
-      state_province: "TX",
-      zip_postal_code: "75154",
-      country: "US",
-      urbanization: "",
-      phone_number: "214-235-8818",
-      fax_number: "",
-      e_mail: "adoyle88@gmail.com",
-      reference_number: "106005450",
-      nickname: "1",
-    },
-    {
-      backer_number: 3,
-      backer_uid: 1992183902,
-      backer_name: "Jim Dumser",
-      email: "jimdumser@gmail.com",
-      shipping_country: "US",
-      shipping_amount: "$0.00",
-      reward_title: "Early Bird - Hacker Bundle",
-      backing_minimum: "$50.00",
-      reward_id: 8473311,
-      bonus_support: "$0.00",
-      pledge_amount: "$50.00",
-      pledged_at: "2021/10/25, 13:23",
-      fulfillment_status: "Not provided",
-      pledged_status: "collected",
-      notes: "",
-      survey_response: "",
-    },
-    {
-      backer_number: 4,
-      backer_uid: 1876102118,
-      backer_name: "Timo",
-      email: "timo@ribbers.com",
-      shipping_country: "US",
-      shipping_amount: "$0.00",
-      reward_title: "Early Bird - Hacker Bundle",
-      backing_minimum: "$50.00",
-      reward_id: 8473311,
-      bonus_support: "$0.00",
-      pledge_amount: "$50.00",
-      pledged_at: "2021/10/25, 13:28",
-      fulfillment_status: "Not provided",
-      pledged_status: "collected",
-      notes: "",
-      survey_response: "",
-    },
-    {
-      backer_number: 8,
-      backer_uid: 1876102148,
-      backer_name: "Dan Pastusek",
-      email: "timo@ribbers.com",
-      shipping_country: "US",
-      shipping_amount: "$0.00",
-      reward_title: "Early Bird - Hacker Bundle",
-      backing_minimum: "$50.00",
-      reward_id: 8473311,
-      bonus_support: "$0.00",
-      pledge_amount: "$50.00",
-      pledged_at: "2021/10/25, 13:28",
-      fulfillment_status: "Not provided",
-      pledged_status: "collected",
-      notes: "",
-      survey_response: "",
-    },
-  ]);
+  const [orders, setOrders] = useState([]);
+  const [banner, setBanner] = useState({});
 
-  // useEffect(async () => {
-  //   const result = (
-  //     await window.fetch("https://api.kubesail.com/admin/pibox/orders", {
-  //       headers: {
-  //         "content-type": "application/json",
-  //         authorization,
-  //       },
-  //       method: "POST",
-  //     })
-  //   ).toJSON();
-  //   setOrders(result.orders);
-  // });
+  const filteredOrders = orders.filter((order) => order.shippingCountryCode);
+  const activeOrder = orders.find(
+    (order) => order.kickstarterBackerUid === active
+  );
 
-  useEffect(async () => {
-    setRates([]);
-    if (!activeOrder || !activeOrder?.address_1) return;
-
-    if (activeOrder.shipment) {
-      shipment = await api.Shipment.retrieve(activeOrder.shipment);
-      setRates(shipment.rates);
-      return;
+  // Fetch all orders once on page load
+  useEffect(() => {
+    async function fetchOrders() {
+      const res = await window.fetch(
+        "https://api.kubesail.com/admin/pibox/orders",
+        {
+          headers: { "content-type": "application/json", authorization },
+        }
+      );
+      setOrders((await res.json()).orders);
     }
-    // setCost(orders);
+    fetchOrders();
+  }, []);
 
-    shipment = await new api.Shipment({
-      to_address: {
-        company: activeOrder.company,
-        street1: activeOrder.address_1,
-        street2: activeOrder.address_2,
-        city: activeOrder.city,
-        state: activeOrder.state_province,
-        zip: activeOrder.zip_postal_code,
-        phone: activeOrder.phone_number,
-      },
-      from_address: {
-        company: "KubeSail",
-        street1: "1593 McAllister St",
-        city: "San Francisco",
-        state: "CA",
-        zip: "94115",
-        phone: "936-718-4259",
-      },
-      options: {
-        label_format: "PDF",
-        print_custom_1: "KS-" + activeOrder.reference_number,
-        print_custom_1_barcode: "KS-" + activeOrder.reference_number,
-      },
-      parcel: PARCEL_HACKER_BUNDLE,
-    }).save();
-    // TODO save shipment ID to kubesail API
-    setRates(shipment.rates);
-    setOrders(
-      orders.map((order) =>
-        order.backer_uid === active
-          ? { ...order, shipment: shipment.id }
-          : order
-      )
-    );
+  // Fetch new shipping data for selected record when it changes
+  useEffect(() => {
+    async function fetchShipping() {
+      setRates([]);
+      if (!activeOrder || !activeOrder?.shippingCountryCode) return;
+
+      // fetch existing shipping data if a "shipment" object has been made.
+      // NOTE this does not mean that it has been shipped!
+      if (activeOrder.shippingId) {
+        shipment = await api.Shipment.retrieve(activeOrder.shippingId);
+        setRates(shipment.rates);
+        return;
+      }
+
+      shipment = await new api.Shipment({
+        to_address: {
+          street1: activeOrder.shippingAddress1,
+          street2: activeOrder.shippingAddress2,
+          city: activeOrder.shippingCity,
+          state: activeOrder.shippingState,
+          zip: activeOrder.shippingPostalCode,
+          phone: activeOrder.shippingPhoneNumber,
+        },
+        from_address: {
+          company: "KubeSail, Inc.",
+          street1: "951 20th St Unit 180",
+          city: "Denver",
+          state: "CO",
+          zip: "80202",
+          phone: "713-581-4848",
+        },
+        options: { label_format: "PDF" },
+        parcel: PARCEL_HACKER_BUNDLE,
+      }).save();
+      // Save shipment ID to order via kubesail API
+      await window.fetch(
+        `https://api.kubesail.com/admin/pibox/order/${activeOrder.id}`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", authorization },
+          body: JSON.stringify({ shippingId: shipment.id }),
+        }
+      );
+      // display rates
+      setRates(shipment.rates);
+
+      // add shipping id to current row in orders state
+      setOrders(
+        orders.map((order) =>
+          order.kickstarterBackerUid === active
+            ? { ...order, shippingId: shipment.id }
+            : order
+        )
+      );
+    }
+    fetchShipping();
   }, [active]);
 
-  const activeOrder = orders.find((order) => order.backer_uid === active);
+  async function buyShipping(rateId) {
+    const boughtShipment = await shipment.buy(rateId);
+    console.log({ boughtShipment });
+
+    // Save shipment ID to kubesail API
+    await window.fetch(
+      `https://api.kubesail.com/admin/pibox/order/${activeOrder.id}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization },
+        body: JSON.stringify({
+          shippingCarrier: boughtShipment.selected_rate.carrier,
+          trackingNumber: boughtShipment.tracking_code,
+        }),
+      }
+    );
+
+    fetch("/pibox/print-label", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ url: boughtShipment.postage_label.label_url }),
+    });
+    setRates([]);
+  }
+
+  async function associateProductToOrder(serial, orderId) {
+    // Save shipment ID to kubesail API
+    await window.fetch(
+      `https://api.kubesail.com/admin/pibox/product/${serial}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization },
+        body: JSON.stringify({ pibox_order_id: orderId }),
+      }
+    );
+  }
+
+  const sortedRates = rates.sort(function (a, b) {
+    if (parseInt(a.rate, 10) < parseInt(b.rate, 10)) return -1;
+    if (parseInt(a.rate, 10) > parseInt(b.rate, 10)) return 1;
+    return 0;
+  });
 
   return (
     <div className="App">
-      <header className="App-header">
-        <p>📦 PiBox Shipping Station</p>
+      <header
+        className="App-header"
+        style={{ backgroundColor: banner.background ? banner.background : "" }}
+      >
+        {banner.msg ? (
+          <p>
+            {banner.msg} <button onClick={() => setBanner({})}>OK</button>
+          </p>
+        ) : (
+          <p>📦 PiBox Shipping Station</p>
+        )}
       </header>
+      <div>
+        <form
+          name="addproduct"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const form = e.currentTarget;
+            const body = serialize(form, { hash: true, empty: true });
+            body.serial = body.serial.replace("https://pibox.io/help/", "");
+
+            const res = await window.fetch(
+              "https://api.kubesail.com/admin/pibox/product",
+              {
+                method: "POST",
+                headers: { "content-type": "application/json", authorization },
+                body: JSON.stringify(body),
+              }
+            );
+            if (res.status !== 200) {
+              setBanner({
+                background: "#ff0000",
+                msg: "Issue saving product! Perhaps this serial already exists?",
+              });
+            } else {
+              setBanner({
+                background: "#00ff00",
+                msg: "Product Saved!",
+              });
+              setTimeout(() => setBanner({}), 1000);
+            }
+            await res.json();
+            document.forms.addproduct.elements.serial.value = "";
+          }}
+        >
+          <textarea
+            name="mfgData"
+            id=""
+            cols="150"
+            rows="5"
+            defaultValue={
+              `{\n` +
+              `  "carrier": {"rev": 22, "vendor":"JLCPCB", "order": "3554464A-Y35-211027", "assembly": "JLCPCB"},\n` +
+              `  "backplane": {"rev": 24, "vendor":"JLCPCB", "order": "3554464A-Y40-211120", "assembly": "JLCPCB + KubeSail"},\n` +
+              `  "test": {"date": "2021-12-09T01:03:24.507Z"}\n` +
+              `}\n`
+            }
+          />
+          <input
+            name="sku"
+            type="text"
+            className="wide-input"
+            defaultValue={"Hacker Bundle"}
+          />
+          <input
+            name="serial"
+            type="text"
+            className="wide-input"
+            placeholder="scan QR serial to save mfgData"
+          />
+          <input type="submit" value="Save Product" />
+        </form>
+      </div>
       <div className="App-main">
         <section className="App-orders">
+          <h2>
+            {orders.length} Total - Showing {filteredOrders.length} with
+            Shipping Country
+          </h2>
           <table>
             <thead>
               <tr>
                 <th>Backer Number</th>
                 <th>Name</th>
                 <th>Country</th>
+                <th>Reward</th>
+                <th>Shipping ID</th>
               </tr>
             </thead>
             <tbody>
-              {orders.map((row) => (
+              {filteredOrders.map((row) => (
                 <tr
-                  className={active === row.backer_uid ? "active" : ""}
-                  key={row.backer_uid}
-                  onClick={() => setActive(row.backer_uid)}
+                  className={
+                    active === row.kickstarterBackerUid ? "active" : ""
+                  }
+                  key={row.kickstarterBackerUid}
+                  onClick={() => setActive(row.kickstarterBackerUid)}
                 >
-                  <td>{row.backer_number}</td>
-                  <td>{row.backer_name}</td>
-                  <td>{row.shipping_country}</td>
+                  <td>{row.kickstarterBackerNumber}</td>
+                  <td>{row.shippingName}</td>
+                  <td>{row.shippingCountryCode}</td>
+                  <td>{row.orderDetails?.reward}</td>
+                  <td>{row.shippingId}</td>
                 </tr>
               ))}
             </tbody>
@@ -205,62 +255,59 @@ function App() {
         <section className="App-details">
           {activeOrder ? (
             <div>
-              {activeOrder.shipment && <h2>{activeOrder.shipment}</h2>}
-              <table>
-                <tbody>
-                  {activeOrder?.shipment?.postage_label ? (
-                    <h2 style={{ color: "green" }}>✔ Shipped</h2>
-                  ) : !activeOrder.address_1 ? (
-                    <h2 style={{ color: "red" }}>Incomplete Address</h2>
-                  ) : rates.length === 0 ? (
-                    <h2>Fetching Rates...</h2>
-                  ) : (
-                    rates
-                      .sort(function (a, b) {
-                        if (parseInt(a.rate, 10) < parseInt(b.rate, 10))
-                          return -1;
-                        if (parseInt(a.rate, 10) > parseInt(b.rate, 10))
-                          return 1;
-                        return 0;
-                      })
-                      .map((rate) => (
-                        <tr key={rate.id}>
-                          <td>{rate.carrier}</td>
-                          <td>{rate.service}</td>
-                          <td>{rate.delivery_days}</td>
-                          <td>${rate.rate}</td>
-                          <td>
-                            <button
-                              style={{ padding: "2px 12px" }}
-                              onClick={async () => {
-                                const boughtShipment = await shipment.buy(
-                                  rate.id
-                                );
-                                // TODO log shipment ID to kubesail API
-                                fetch("/pibox/print-label", {
-                                  method: "POST",
-                                  headers: {
-                                    "content-type": "application/json",
-                                  },
-                                  body: JSON.stringify({
-                                    url: boughtShipment.postage_label.label_url,
-                                  }),
-                                });
-                                // window.open(
-                                //   boughtShipment.postage_label.label_url,
-                                //   "_blank"
-                                // );
-                                setRates([]);
-                              }}
-                            >
-                              Buy Postage
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                  )}
-                </tbody>
-              </table>
+              {activeOrder.shippingId && <h2>{activeOrder.shippingId}</h2>}
+
+              <form
+                name="buypostage"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const form = e.currentTarget;
+                  const body = serialize(form, { hash: true, empty: true });
+                  body.serial = body.serial.replace(
+                    "https://pibox.io/help/",
+                    ""
+                  );
+                  associateProductToOrder(body.serial, activeOrder.id);
+                  buyShipping(sortedRates[0]);
+                }}
+              >
+                <input
+                  type="text"
+                  id="serial"
+                  name="serial"
+                  className="wide-input"
+                  placeholder="scan QR serial to ship w/ lowest rate"
+                />
+              </form>
+
+              {activeOrder.trackingNumber ? (
+                <h2 style={{ color: "green" }}>✔ Shipped</h2>
+              ) : !activeOrder.shippingAddress1 ? (
+                <h2 style={{ color: "red" }}>Incomplete Address</h2>
+              ) : rates.length === 0 ? (
+                <h2>Fetching Rates...</h2>
+              ) : (
+                <table>
+                  <tbody>
+                    {sortedRates.map((rate) => (
+                      <tr key={rate.id}>
+                        <td>{rate.carrier}</td>
+                        <td>{rate.service}</td>
+                        <td>{rate.delivery_days}</td>
+                        <td>${rate.rate}</td>
+                        <td>
+                          <button
+                            style={{ padding: "2px 12px" }}
+                            onClick={() => buyShipping(rate.id)}
+                          >
+                            Buy Postage
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
               <hr />
               <table>
                 <thead>
@@ -273,7 +320,7 @@ function App() {
                   {Object.keys(activeOrder).map((key) => (
                     <tr key={key}>
                       <td>{key}</td>
-                      <td>{activeOrder[key]}</td>
+                      <td>{JSON.stringify(activeOrder[key])}</td>
                     </tr>
                   ))}
                 </tbody>
