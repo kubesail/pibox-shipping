@@ -56,7 +56,7 @@ function App() {
       // NOTE this does not mean that it has been shipped!
       if (activeOrder.shippingId) {
         shipment = await api.Shipment.retrieve(activeOrder.shippingId);
-        setRates(shipment.rates);
+        if (shipment.rates) setRates(shipment.rates);
         return;
       }
 
