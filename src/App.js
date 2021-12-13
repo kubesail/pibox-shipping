@@ -62,6 +62,7 @@ function App() {
 
       shipment = await new api.Shipment({
         to_address: {
+          name: activeOrder.shippingName,
           street1: activeOrder.shippingAddress1,
           street2: activeOrder.shippingAddress2,
           city: activeOrder.shippingCity,
@@ -128,6 +129,13 @@ function App() {
       body: JSON.stringify({ url: boughtShipment.postage_label.label_url }),
     });
     setRates([]);
+    setOrders(
+      orders.map((order) =>
+        order.kickstarterBackerUid === active
+          ? { ...order, trackingNumber: boughtShipment.tracking_code }
+          : order
+      )
+    );
     setActive(filteredOrders[activeOrderIndex + 1].kickstarterBackerUid);
   }
 
