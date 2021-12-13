@@ -33,23 +33,17 @@ app.post("/pibox/print-label", (req, res) => {
     response.pipe(file);
   });
   request.on("finish", () => {
-    exec(
-      "node convert.js",
-      {
-        cwd: "/root/pibox-shipping/raster-to-tspl-js",
-      },
-      (error, stdout, stderr) => {
-        if (error) {
-          console.log(`error: ${error.message}`);
-          return;
-        }
-        if (stderr) {
-          console.log(`stderr: ${stderr}`);
-          return;
-        }
-        console.log(`stdout: ${stdout}`);
+    exec("./print_pdf.sh", (error, stdout, stderr) => {
+      if (error) {
+        console.log(`error: ${error.message}`);
+        return;
       }
-    );
+      if (stderr) {
+        console.log(`stderr: ${stderr}`);
+        return;
+      }
+      console.log(`stdout: ${stdout}`);
+    });
   });
   res.send("");
 });
