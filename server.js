@@ -19,7 +19,11 @@ const easyPostProxy = async (req, res) => {
     headers: {
       "content-type": "application/json",
       authorization: `Basic ${Buffer.from(
-        `${process.env.EASYPOST_API_KEY}:`
+        `${
+          process.env.REACT_APP_EASYPOST_MODE === "live"
+            ? process.env.EASYPOST_API_KEY_LIVE
+            : process.env.EASYPOST_API_KEY_TEST
+        }:`
       ).toString("base64")}`,
     },
     body: req.method === "GET" ? null : JSON.stringify(req.body),

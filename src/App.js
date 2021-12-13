@@ -11,8 +11,10 @@ const authorization = `Basic ${btoa(
   `${process.env.REACT_APP_KUBESAIL_PUBLIC_KEY}:${process.env.REACT_APP_KUBESAIL_SECRET_KEY}`
 )}`;
 
-// const PARCEL_HACKER_BUNDLE = "prcl_99744dbc8d67410d9ef83ce1539611a4"; // live
-const PARCEL_HACKER_BUNDLE = "prcl_6b6e501acd2a4f59bca7ca303d9a40ee"; // test
+const PARCEL_HACKER_BUNDLE =
+  process.env.REACT_APP_EASYPOST_MODE === "live"
+    ? "prcl_99744dbc8d67410d9ef83ce1539611a4"
+    : "prcl_6b6e501acd2a4f59bca7ca303d9a40ee";
 
 let shipment;
 
