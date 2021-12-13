@@ -26,6 +26,9 @@ function App() {
   const activeOrder = orders.find(
     (order) => order.kickstarterBackerUid === active
   );
+  const activeOrderIndex = filteredOrders.findIndex(
+    (order) => order.kickstarterBackerUid === active
+  );
 
   // Fetch all orders once on page load
   useEffect(() => {
@@ -122,6 +125,7 @@ function App() {
       body: JSON.stringify({ url: boughtShipment.postage_label.label_url }),
     });
     setRates([]);
+    setActive(filteredOrders[activeOrderIndex + 1].kickstarterBackerUid);
   }
 
   async function associateProductToOrder(serial, orderId) {
