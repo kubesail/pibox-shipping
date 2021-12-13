@@ -258,7 +258,7 @@ function App() {
                 <th>Name</th>
                 <th>Country</th>
                 <th>Reward</th>
-                <th>Shipping ID</th>
+                <th>Tracking Number</th>
                 <th>Notes</th>
               </tr>
             </thead>
@@ -275,8 +275,8 @@ function App() {
                   <td>{row.shippingName}</td>
                   <td>{row.shippingCountryCode}</td>
                   <td>{row.orderDetails?.reward}</td>
-                  <td>{row.shippingId}</td>
-                  <td>{row.notes?.substr(0, 10)}...</td>
+                  <td>{row.trackingNumber}</td>
+                  <td>{row.notes ? row.notes.substr(0, 10) + "..." : ""}</td>
                 </tr>
               ))}
             </tbody>
