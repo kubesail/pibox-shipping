@@ -3,6 +3,6 @@ gs -sDEVICE=bmpmono -r200 -f -o label.png label.pdf
 gm convert label.png -crop 800x1198+450+80 label.png
 
 convert label.png -fill white -stroke white -draw "rectangle 620,32 775,84" label.png
-convert label.png +antialias -font DejaVu-Sans-Bold -pointsize 50 -annotate +1040+150 "PiBox" label.png
+convert label.png +antialias -font DejaVu-Sans-Bold -pointsize 50 -annotate +1060+150 "PiBox" label.png
 
 # node raster-to-tspl-js/print.js label.png
