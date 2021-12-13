@@ -285,6 +285,19 @@ function App() {
                 />
               </form>
 
+              {activeOrder.notes && (
+                <div
+                  style={{
+                    backgroundColor: "red",
+                    color: "white",
+                    padding: 20,
+                    fontSize: 20,
+                  }}
+                >
+                  {activeOrder.notes}
+                </div>
+              )}
+
               {activeOrder.trackingNumber ? (
                 <h2 style={{ color: "green" }}>✔ Shipped</h2>
               ) : !activeOrder.shippingAddress1 ? (
