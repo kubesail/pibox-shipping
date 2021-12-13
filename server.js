@@ -33,7 +33,7 @@ app.post("/pibox/print-label", (req, res) => {
     response.pipe(file);
   });
   request.on("finish", () => {
-    exec("./print_pdf.sh", (error, stdout, stderr) => {
+    exec("./bin/print_pdf.sh", (error, stdout, stderr) => {
       if (error) {
         console.log(`error: ${error.message}`);
         return;
