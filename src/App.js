@@ -115,6 +115,7 @@ function App() {
         body: JSON.stringify({
           shippingCarrier: boughtShipment.selected_rate.carrier,
           trackingNumber: boughtShipment.tracking_code,
+          trackingURL: boughtShipment.tracker.public_url,
         }),
       }
     );
