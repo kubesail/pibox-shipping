@@ -132,7 +132,16 @@ function App() {
           : order
       )
     );
-    setActive(filteredOrders[activeOrderIndex + 1].kickstarterBackerUid);
+
+    let nextActiveIndex = activeOrderIndex;
+    while (filteredOrders[nextActiveIndex]?.notes) {
+      nextActiveIndex++;
+    }
+    if (filteredOrders[nextActiveIndex]) {
+      setActive(filteredOrders[nextActiveIndex].kickstarterBackerUid);
+    } else {
+      setActive(null);
+    }
   }
 
   async function printLabel(labelURL) {
@@ -250,6 +259,7 @@ function App() {
                 <th>Country</th>
                 <th>Reward</th>
                 <th>Shipping ID</th>
+                <th>Notes</th>
               </tr>
             </thead>
             <tbody>
@@ -266,6 +276,7 @@ function App() {
                   <td>{row.shippingCountryCode}</td>
                   <td>{row.orderDetails?.reward}</td>
                   <td>{row.shippingId}</td>
+                  <td>{row.notes?.substr(0, 10)}...</td>
                 </tr>
               ))}
             </tbody>
