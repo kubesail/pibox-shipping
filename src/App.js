@@ -123,11 +123,7 @@ function App() {
       }
     );
 
-    fetch("/pibox/print-label", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ url: boughtShipment.postage_label.label_url }),
-    });
+    printLabel(boughtShipment.postage_label.label_url);
     setRates([]);
     setOrders(
       orders.map((order) =>
@@ -137,6 +133,14 @@ function App() {
       )
     );
     setActive(filteredOrders[activeOrderIndex + 1].kickstarterBackerUid);
+  }
+
+  async function printLabel(labelURL) {
+    await fetch("/pibox/print-label", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ url: labelURL }),
+    });
   }
 
   async function associateProductToOrder(serial, orderId) {
@@ -310,7 +314,14 @@ function App() {
               )}
 
               {activeOrder.trackingNumber ? (
-                <h2 style={{ color: "green" }}>✔ Shipped</h2>
+                <h2 style={{ color: "green" }}>
+                  ✔ Shipped{" "}
+                  <button
+                    onClick={() => printLabel(shipment.postage_label.label_url)}
+                  >
+                    reprint
+                  </button>
+                </h2>
               ) : !activeOrder.shippingAddress1 ? (
                 <h2 style={{ color: "red" }}>Incomplete Address</h2>
               ) : rates.length === 0 ? (
