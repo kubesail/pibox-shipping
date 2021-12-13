@@ -28,7 +28,7 @@ const easyPostProxy = async (req, res) => {
 };
 
 app.post("/pibox/print-label", (req, res) => {
-  const file = fs.createWriteStream("raster-to-tspl-js/test-label.png");
+  const file = fs.createWriteStream("label.pdf");
   const request = https.get(req.body.url, function (response) {
     response.pipe(file);
   });
