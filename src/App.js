@@ -273,6 +273,7 @@ function App() {
                   );
                   associateProductToOrder(body.serial, activeOrder.id);
                   buyShipping(sortedRates[0]);
+                  document.forms.buypostage.elements.serial.value = "";
                 }}
               >
                 <input
