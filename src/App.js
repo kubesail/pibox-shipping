@@ -297,6 +297,13 @@ function App() {
                     "https://pibox.io/help/",
                     ""
                   );
+                  if (
+                    process.env.REACT_APP_EASYPOST_MODE === "test" &&
+                    activeOrder.id !== 4995
+                  ) {
+                    window.alert("REFUSING TO ASSOCIATE ORDER IN TEST MODE");
+                    return;
+                  }
                   associateProductToOrder(body.serial, activeOrder.id);
                   buyShipping(sortedRates[0]);
                   document.forms.buypostage.elements.serial.value = "";
@@ -346,14 +353,6 @@ function App() {
                         <td>{rate.service}</td>
                         <td>{rate.delivery_days}</td>
                         <td>${rate.rate}</td>
-                        <td>
-                          <button
-                            style={{ padding: "2px 12px" }}
-                            onClick={() => buyShipping(rate.id)}
-                          >
-                            Buy Postage
-                          </button>
-                        </td>
                       </tr>
                     ))}
                   </tbody>
