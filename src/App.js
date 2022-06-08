@@ -16,6 +16,9 @@ const PARCEL_HACKER_BUNDLE =
     ? "prcl_99744dbc8d67410d9ef83ce1539611a4"
     : "prcl_6b6e501acd2a4f59bca7ca303d9a40ee";
 
+const PARCEL_STANDARD_BUNDLE = "prcl_ae7758818bd3483d947bda9652e85acd";
+const CUSTOMS_INFO = "cstinfo_43fe2c1dcaad4d18bae6b05c2a0c8fc8";
+
 let shipment;
 
 function App() {
@@ -23,13 +26,21 @@ function App() {
   const [rates, setRates] = useState([]);
   const [orders, setOrders] = useState([]);
   const [banner, setBanner] = useState({});
+  const [insuranceAmount, setInsuranceAmount] = useState(250);
 
-  const filteredOrders = orders.filter((order) => order.shippingCountryCode);
-  const activeOrder = orders.find(
-    (order) => order.kickstarterBackerUid === active
-  );
+  const filteredOrders = orders.filter((order) => {
+    // if (!order.shippingCountryCode) return false;
+    // if (order.shippingCountryCode !== "US") return false;
+    // if (order.kickstarterBackerNumber > 210) return false;
+    // if (order.notes) return false;
+    // if (order.orderDetails?.reward !== "Standard Bundle") return false;
+    if (order.trackingNumber) return false;
+    // if (order.orderDetails?.reward !== "Standard Bundle") return false;
+    return true;
+  });
+  const activeOrder = orders.find((order) => order.id === active);
   const activeOrderIndex = filteredOrders.findIndex(
-    (order) => order.kickstarterBackerUid === active
+    (order) => order.id === active
   );
 
   // Fetch all orders once on page load
@@ -67,19 +78,31 @@ function App() {
           street2: activeOrder.shippingAddress2,
           city: activeOrder.shippingCity,
           state: activeOrder.shippingState,
+          country: activeOrder.shippingCountryCode,
           zip: activeOrder.shippingPostalCode,
           phone: activeOrder.shippingPhoneNumber,
         },
         from_address: {
           company: "KubeSail, Inc.",
-          street1: "951 20th St Unit 180",
-          city: "Denver",
-          state: "CO",
-          zip: "80202",
+          street1: "10800 Gosling Rd",
+          street2: "Box 132672",
+          city: "Spring",
+          state: "TX",
+          zip: "77393",
           phone: "713-581-4848",
         },
+        // from_address: {
+        //   company: "KubeSail, Inc.",
+        //   street1: "208 13 Ave NE",
+        //   city: "Calgary",
+        //   state: "AB",
+        //   zip: "T2E 1B7",
+        //   country: "CA",
+        //   phone: "713-581-4848",
+        // },
+        customs_info: { id: "cstinfo_43fe2c1dcaad4d18bae6b05c2a0c8fc8" },
         options: { label_format: "PDF" },
-        parcel: PARCEL_HACKER_BUNDLE,
+        parcel: PARCEL_STANDARD_BUNDLE,
       }).save();
       // Save shipment ID to order via kubesail API
       await window.fetch(
@@ -96,9 +119,7 @@ function App() {
       // add shipping id to current row in orders state
       setOrders(
         orders.map((order) =>
-          order.kickstarterBackerUid === active
-            ? { ...order, shippingId: shipment.id }
-            : order
+          order.id === active ? { ...order, shippingId: shipment.id } : order
         )
       );
     }
@@ -106,7 +127,7 @@ function App() {
   }, [active]);
 
   async function buyShipping(rateId) {
-    const boughtShipment = await shipment.buy(rateId);
+    const boughtShipment = await shipment.buy(rateId, insuranceAmount);
     console.log({ boughtShipment });
 
     // Save shipment ID to kubesail API
@@ -123,11 +144,16 @@ function App() {
       }
     );
 
+    setBanner({
+      background: "#00ff00",
+      msg: "Shipping Purchased!",
+    });
+
     printLabel(boughtShipment.postage_label.label_url);
     setRates([]);
     setOrders(
       orders.map((order) =>
-        order.kickstarterBackerUid === active
+        order.id === active
           ? { ...order, trackingNumber: boughtShipment.tracking_code }
           : order
       )
@@ -138,7 +164,7 @@ function App() {
       nextActiveIndex++;
     }
     if (filteredOrders[nextActiveIndex]) {
-      setActive(filteredOrders[nextActiveIndex].kickstarterBackerUid);
+      setActive(filteredOrders[nextActiveIndex].id);
     } else {
       setActive(null);
     }
@@ -154,7 +180,7 @@ function App() {
 
   async function associateProductToOrder(serial, orderId) {
     // Save shipment ID to kubesail API
-    await window.fetch(
+    const res = await window.fetch(
       `https://api.kubesail.com/admin/pibox/product/${serial}`,
       {
         method: "POST",
@@ -162,11 +188,27 @@ function App() {
         body: JSON.stringify({ piboxOrderId: orderId }),
       }
     );
+
+    if (res.status !== 200) {
+      setBanner({
+        background: "#ff0000",
+        msg: "Issue linking serial to order! Does this serial exist?",
+      });
+      return false;
+    } else {
+      setBanner({
+        background: "#00ff00",
+        msg: "Serial Linked to Order!",
+      });
+      return true;
+    }
   }
 
   const sortedRates = rates.sort(function (a, b) {
-    if (parseInt(a.rate, 10) < parseInt(b.rate, 10)) return -1;
-    if (parseInt(a.rate, 10) > parseInt(b.rate, 10)) return 1;
+    if (a.service === "Priority") return -1;
+    if (b.service === "Priority") return 1;
+    if (parseFloat(a.rate, 10) < parseFloat(b.rate, 10)) return -1;
+    if (parseFloat(a.rate, 10) > parseFloat(b.rate, 10)) return 1;
     return 0;
   });
 
@@ -224,9 +266,9 @@ function App() {
             rows="5"
             defaultValue={
               `{\n` +
-              `  "carrier": {"rev": 22, "vendor":"JLCPCB", "order": "3554464A-Y35-211027", "assembly": "JLCPCB"},\n` +
-              `  "backplane": {"rev": 24, "vendor":"JLCPCB", "order": "3554464A-Y40-211120", "assembly": "JLCPCB + KubeSail"},\n` +
-              `  "test": {"date": "2021-12-09T01:03:24.507Z"}\n` +
+              `  "carrier": {"rev": 26, "vendor":"CKS", "order": "CKS-2", "assembly": "CKS"},\n` +
+              `  "backplane": {"rev": 26, "vendor":"JLCPCB", "order": "W202201032328710", "assembly": "JLCPCB + CyberCityCircuits"},\n` +
+              `  "test": {"date": "2022-04-07T04:10:0.000Z"}\n` +
               `}\n`
             }
           />
@@ -244,12 +286,19 @@ function App() {
           />
           <input type="submit" value="Save Product" />
         </form>
+
+        <input
+          type="text"
+          className="wide-input"
+          placeholder="Insurance Amount"
+          value={insuranceAmount}
+          onChange={(e) => setInsuranceAmount(e.target.value)}
+        />
       </div>
       <div className="App-main">
         <section className="App-orders">
           <h2>
-            {orders.length} Total - Showing {filteredOrders.length} with
-            Shipping Country
+            {orders.length} Total - Showing {filteredOrders.length} Filtered
           </h2>
           <table>
             <thead>
@@ -265,18 +314,21 @@ function App() {
             <tbody>
               {filteredOrders.map((row) => (
                 <tr
-                  className={
-                    active === row.kickstarterBackerUid ? "active" : ""
-                  }
-                  key={row.kickstarterBackerUid}
-                  onClick={() => setActive(row.kickstarterBackerUid)}
+                  className={active === row.id ? "active" : ""}
+                  key={row.id}
+                  onClick={() => setActive(row.id)}
                 >
                   <td>{row.kickstarterBackerNumber}</td>
                   <td>{row.shippingName}</td>
                   <td>{row.shippingCountryCode}</td>
                   <td>{row.orderDetails?.reward}</td>
                   <td>{row.trackingNumber}</td>
-                  <td>{row.notes ? row.notes.substr(0, 10) + "..." : ""}</td>
+                  <td>
+                    {row.notes ? row.notes.substr(0, 10) + "..." : ""}
+                    {row.shippingDeliveryNotes
+                      ? row.shippingDeliveryNotes.substr(0, 10) + "..."
+                      : ""}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -297,7 +349,11 @@ function App() {
                     "https://pibox.io/help/",
                     ""
                   );
-                  associateProductToOrder(body.serial, activeOrder.id);
+                  const associated = await associateProductToOrder(
+                    body.serial,
+                    activeOrder.id
+                  );
+                  if (!associated) return;
                   buyShipping(sortedRates[0]);
                   document.forms.buypostage.elements.serial.value = "";
                 }}
@@ -321,6 +377,19 @@ function App() {
                   }}
                 >
                   {activeOrder.notes}
+                </div>
+              )}
+
+              {!insuranceAmount && (
+                <div
+                  style={{
+                    backgroundColor: "orange",
+                    color: "white",
+                    padding: 20,
+                    fontSize: 20,
+                  }}
+                >
+                  Purchasing without insurance
                 </div>
               )}
 
@@ -369,7 +438,12 @@ function App() {
                 </thead>
                 <tbody>
                   {Object.keys(activeOrder).map((key) => (
-                    <tr key={key}>
+                    <tr
+                      key={key}
+                      onClick={() => {
+                        // navigator.clipboard.writeText(activeOrder[key]);
+                      }}
+                    >
                       <td>{key}</td>
                       <td>{JSON.stringify(activeOrder[key])}</td>
                     </tr>
