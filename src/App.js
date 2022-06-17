@@ -15,9 +15,10 @@ const PARCEL_HACKER_BUNDLE =
   process.env.REACT_APP_EASYPOST_MODE === "live"
     ? "prcl_99744dbc8d67410d9ef83ce1539611a4"
     : "prcl_6b6e501acd2a4f59bca7ca303d9a40ee";
-
 const PARCEL_STANDARD_BUNDLE = "prcl_ae7758818bd3483d947bda9652e85acd";
-const CUSTOMS_INFO = "cstinfo_43fe2c1dcaad4d18bae6b05c2a0c8fc8";
+
+const CUSTOMS_INFO_STANDARD_BUNDLE = "cstinfo_dbfac963b8e241b391615d1e5522eb4c";
+const CUSTOMS_INFO_HACKER_BUNDLE = "cstinfo_00abcf2c420f458daafa7d9038e769fe";
 
 let shipment;
 
@@ -30,11 +31,12 @@ function App() {
 
   const filteredOrders = orders.filter((order) => {
     // if (!order.shippingCountryCode) return false;
-    // if (order.shippingCountryCode !== "US") return false;
+    if (!order.shippingCountryCode) return false;
+    // if (order.shippingCountryCode !== "AU") return false;
     // if (order.kickstarterBackerNumber > 210) return false;
     // if (order.notes) return false;
-    // if (order.orderDetails?.reward !== "Standard Bundle") return false;
     if (order.trackingNumber) return false;
+    if (!order.orderDetails?.reward?.startsWith("Hacker Bundle")) return false;
     // if (order.orderDetails?.reward !== "Standard Bundle") return false;
     return true;
   });
@@ -100,7 +102,7 @@ function App() {
         //   country: "CA",
         //   phone: "713-581-4848",
         // },
-        customs_info: { id: "cstinfo_43fe2c1dcaad4d18bae6b05c2a0c8fc8" },
+        customs_info: { id: CUSTOMS_INFO_HACKER_BUNDLE },
         options: { label_format: "PDF" },
         parcel: PARCEL_STANDARD_BUNDLE,
       }).save();
